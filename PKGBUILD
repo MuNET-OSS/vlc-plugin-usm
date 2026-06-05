@@ -13,9 +13,11 @@ source=("git+file://${_srcdir}")
 sha256sums=('SKIP')
 
 build() {
+  local cmake_c_flags="${CFLAGS} -ffile-prefix-map=${srcdir}=."
   cmake -S "${srcdir}/${pkgname}" -B build \
     -DCMAKE_BUILD_TYPE=None \
     -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_C_FLAGS="${cmake_c_flags}" \
     -DCMAKE_SKIP_RPATH=ON
   cmake --build build
 }
