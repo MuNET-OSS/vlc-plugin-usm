@@ -43,5 +43,9 @@ sudo pacman -U vlc-plugin-usm-0.1.0-1-x86_64.pkg.tar.zst
 `--usm-keys` accepts comma, semicolon, whitespace, or newline separated keys.
 Each key can be decimal or hexadecimal with a `0x` prefix.
 
-`--usm-key-file` points to a text file using the same key format. Lines can
-include comments after `#`.
+By default, the plugin reads keys from `$XDG_CONFIG_HOME/vlc/usm-keys.txt`, or
+`~/.config/vlc/usm-keys.txt` when `$XDG_CONFIG_HOME` is unset. This lets VLC load
+keys when opening files from the GUI.
+
+`--usm-key-file` overrides the default path and points to a text file using the
+same key format. Lines can include comments after `#`.

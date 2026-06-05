@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static int expect_true(const char *name, bool value)
@@ -27,6 +28,28 @@ static int test_key_parser_accepts_config_lists(void)
     failed += expect_true("key count", keys.count == 2);
     failed += expect_true("hex key", keys.values[0] == 0x7F4551499DF55E68ULL);
     failed += expect_true("decimal key", keys.values[1] == 1234);
+    return failed;
+}
+
+static int test_default_key_file_path_uses_vlc_config_location(void)
+{
+    int failed = 0;
+
+    char *xdg_path = usm_default_key_file_path_from_env("/tmp/usm-config", "/home/player");
+    failed += expect_true("xdg key path",
+                          xdg_path != NULL &&
+                              strcmp(xdg_path, "/tmp/usm-config/vlc/usm-keys.txt") == 0);
+    free(xdg_path);
+
+    char *home_path = usm_default_key_file_path_from_env("", "/home/player");
+    failed += expect_true("home key path",
+                          home_path != NULL &&
+                              strcmp(home_path, "/home/player/.config/vlc/usm-keys.txt") == 0);
+    free(home_path);
+
+    char *missing_path = usm_default_key_file_path_from_env("", "");
+    failed += expect_true("missing env key path", missing_path == NULL);
+    free(missing_path);
     return failed;
 }
 
@@ -134,6 +157,7 @@ int main(void)
 {
     int failed = 0;
     failed += test_key_parser_accepts_config_lists();
+    failed += test_default_key_file_path_uses_vlc_config_location();
     failed += test_usm_header_parses_video_payload();
     failed += test_ivf_header_and_frame_parse();
     failed += test_ivf_payload_frame_skips_file_header();

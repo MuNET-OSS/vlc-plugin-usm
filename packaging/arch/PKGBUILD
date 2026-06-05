@@ -1,7 +1,7 @@
 # Maintainer: clansty
 pkgname=vlc-plugin-usm
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc='VLC demux plugin for CRIWARE USM video files'
 arch=('x86_64')
 url='https://example.invalid/vlc-plugin-usm'

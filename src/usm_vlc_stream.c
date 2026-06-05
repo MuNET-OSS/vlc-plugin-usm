@@ -15,12 +15,26 @@ bool usm_vlc_read_configured_keys(demux_t *demux, usm_key_list_t *keys)
     }
 
     char *key_file = var_InheritString(demux, "usm-key-file");
-    const bool file_ok = usm_parse_key_file(key_file, keys);
-    if (!file_ok) {
-        msg_Err(demux, "could not read --usm-key-file '%s'", key_file);
+    if (key_file != NULL && key_file[0] != '\0') {
+        const bool file_ok = usm_parse_key_file(key_file, keys);
+        if (!file_ok) {
+            msg_Err(demux, "could not read --usm-key-file '%s'", key_file);
+        }
+        free(key_file);
+        return file_ok;
     }
     free(key_file);
-    return file_ok;
+
+    char *default_key_file = usm_default_key_file_path();
+    const size_t previous_count = keys->count;
+    const bool default_ok = usm_parse_optional_key_file(default_key_file, keys);
+    if (!default_ok) {
+        msg_Err(demux, "could not read default USM key file '%s'", default_key_file);
+    } else if (default_key_file != NULL && keys->count > previous_count) {
+        msg_Info(demux, "loaded default USM key file '%s'", default_key_file);
+    }
+    free(default_key_file);
+    return default_ok;
 }
 
 bool usm_vlc_read_next_payload(demux_t *demux, usm_chunk_header_t *chunk,
