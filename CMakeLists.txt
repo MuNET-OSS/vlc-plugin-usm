@@ -14,6 +14,7 @@ add_library(usm_core STATIC
     src/usm_crypto.c
     src/usm_ivf.c
     src/usm_keys.c
+    src/usm_vp9.c
 )
 set_target_properties(usm_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(usm_core PUBLIC src)
@@ -21,6 +22,7 @@ target_compile_options(usm_core PRIVATE -Wall -Wextra -Wpedantic)
 
 add_library(usm_plugin MODULE
     src/usm_plugin.c
+    src/usm_vlc_seek.c
     src/usm_vlc_stream.c
     src/usm_vlc_video.c
 )

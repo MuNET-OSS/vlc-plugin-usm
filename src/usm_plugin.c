@@ -55,6 +55,7 @@ static int Open(vlc_object_t *object)
     }
 
     while (!sys->have_video_format) {
+        const uint64_t chunk_offset = vlc_stream_Tell(demux->s);
         usm_chunk_header_t chunk;
         block_t *payload = NULL;
         if (!usm_vlc_read_next_payload(demux, &chunk, &payload)) {
@@ -65,6 +66,7 @@ static int Open(vlc_object_t *object)
 
         if (chunk.kind == USM_CHUNK_VIDEO &&
             chunk.payload_type == USM_STREAM_PAYLOAD && payload->i_buffer > 0) {
+            sys->first_payload_offset = chunk_offset;
             if (!usm_vlc_init_video_es(demux, payload)) {
                 block_Release(payload);
                 usm_vlc_destroy_key_probes(demux);
@@ -149,6 +151,21 @@ static int Control(demux_t *demux, int query, va_list args)
             ? (double)sys->current_time / (double)sys->length
             : 0.0;
         return VLC_SUCCESS;
+    case DEMUX_SET_TIME: {
+        const int64_t target_time = va_arg(args, int64_t);
+        (void)va_arg(args, int);
+        return usm_vlc_seek(demux, target_time);
+    }
+    case DEMUX_SET_POSITION: {
+        double position = va_arg(args, double);
+        (void)va_arg(args, int);
+        if (position < 0.0) {
+            position = 0.0;
+        } else if (position > 1.0) {
+            position = 1.0;
+        }
+        return usm_vlc_seek(demux, (vlc_tick_t)(position * (double)sys->length));
+    }
     default:
         return demux_vaControlHelper(demux->s, 0, -1, 0, 1, query, args);
     }

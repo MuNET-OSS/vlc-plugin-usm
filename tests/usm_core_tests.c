@@ -2,6 +2,7 @@
 #include "usm_crypto.h"
 #include "usm_ivf.h"
 #include "usm_keys.h"
+#include "usm_vp9.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -28,6 +29,23 @@ static int test_key_parser_accepts_config_lists(void)
     failed += expect_true("key count", keys.count == 2);
     failed += expect_true("hex key", keys.values[0] == 0x7F4551499DF55E68ULL);
     failed += expect_true("decimal key", keys.values[1] == 1234);
+    return failed;
+}
+
+static int test_vp9_keyframe_header_detection(void)
+{
+    const uint8_t keyframe[1] = {0x82};
+    const uint8_t interframe[1] = {0xa2};
+    const uint8_t show_existing[1] = {0x92};
+    int failed = 0;
+
+    failed += expect_true("vp9 keyframe",
+                          usm_vp9_is_keyframe(keyframe, sizeof(keyframe)));
+    failed += expect_true("vp9 interframe",
+                          !usm_vp9_is_keyframe(interframe, sizeof(interframe)));
+    failed += expect_true("vp9 show existing",
+                          !usm_vp9_is_keyframe(show_existing, sizeof(show_existing)));
+    failed += expect_true("vp9 empty frame", !usm_vp9_is_keyframe(NULL, 0));
     return failed;
 }
 
@@ -157,6 +175,7 @@ int main(void)
 {
     int failed = 0;
     failed += test_key_parser_accepts_config_lists();
+    failed += test_vp9_keyframe_header_detection();
     failed += test_default_key_file_path_uses_vlc_config_location();
     failed += test_usm_header_parses_video_payload();
     failed += test_ivf_header_and_frame_parse();

@@ -184,12 +184,13 @@ int usm_vlc_send_video_frame(demux_t *demux, block_t *payload)
 
     memcpy(frame->p_buffer, frame_data, frame_size);
     frame->i_buffer = frame_size;
-    frame->i_pts = VLC_TICK_0 +
-                   VLC_TICK_FROM_SEC((int64_t)timestamp * sys->ivf.frame_rate_den) /
-                       sys->ivf.frame_rate_num;
+    const vlc_tick_t media_time =
+        VLC_TICK_FROM_SEC((int64_t)timestamp * sys->ivf.frame_rate_den) /
+        sys->ivf.frame_rate_num;
+    frame->i_pts = VLC_TICK_0 + media_time;
     frame->i_dts = frame->i_pts;
     frame->i_length = sys->frame_duration;
-    sys->current_time = frame->i_pts;
+    sys->current_time = media_time;
     sys->frames_sent++;
 
     es_out_SetPCR(demux->out, frame->i_dts);

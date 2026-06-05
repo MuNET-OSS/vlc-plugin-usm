@@ -13,6 +13,7 @@
 #include "usm_crypto.h"
 #include "usm_ivf.h"
 #include "usm_keys.h"
+#include "usm_vp9.h"
 
 typedef struct demux_sys_t {
     es_out_id_t *video_es;
@@ -29,6 +30,7 @@ typedef struct demux_sys_t {
     vlc_tick_t current_time;
     vlc_tick_t frame_duration;
     vlc_tick_t length;
+    uint64_t first_payload_offset;
 } demux_sys_t;
 
 bool usm_vlc_read_configured_keys(demux_t *demux, usm_key_list_t *keys);
@@ -38,5 +40,6 @@ bool usm_vlc_init_key_probes(demux_t *demux);
 void usm_vlc_destroy_key_probes(demux_t *demux);
 bool usm_vlc_init_video_es(demux_t *demux, block_t *payload);
 int usm_vlc_send_video_frame(demux_t *demux, block_t *payload);
+int usm_vlc_seek(demux_t *demux, vlc_tick_t target_time);
 
 #endif
