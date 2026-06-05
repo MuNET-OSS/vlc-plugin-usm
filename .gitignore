@@ -1,6 +1,8 @@
 build/
 pkg/
-srcpkg/
+packaging/arch/pkg/
+packaging/arch/src/
+packaging/arch/vlc-plugin-usm/
 *.pkg.tar.*
 *.src.tar.*
 *.log

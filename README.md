@@ -34,7 +34,9 @@ VLC_PLUGIN_PATH="$PWD/build/vlc-plugins" vlc --no-plugins-cache \
 ## Arch package
 
 ```sh
-makepkg -f
+cd packaging/arch
+PKGDEST=../.. makepkg -f
+cd ../..
 sudo pacman -U vlc-plugin-usm-0.1.0-1-x86_64.pkg.tar.zst
 ```
 
