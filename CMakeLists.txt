@@ -4,8 +4,10 @@ project(vlc_plugin_usm C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
-set(ENV{PKG_CONFIG_PATH} "M:/msys64/mingw64/lib/pkgconfig")
 
+# 从 MSYS2 MinGW64 shell 构建时 pkg-config 会自动找到 vlc-plugin/vpx。
+# 若在其它环境构建，通过环境变量 PKG_CONFIG_PATH 或 -DCMAKE_PREFIX_PATH 指定，
+# 不要在此处硬编码本机路径。
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(VLC_PLUGIN REQUIRED vlc-plugin)
 pkg_check_modules(VPX REQUIRED vpx)
@@ -23,6 +25,10 @@ target_compile_options(usm_core PRIVATE -Wall -Wextra -Wpedantic)
 
 if(WIN32)
     list(APPEND PLUGIN_SOURCES src/dll_entry.c)
+    # VLC 的 vlc_threads.h 在 Windows 分支里有个 static inline vlc_poll()，它调用 POSIX
+    # poll()，而 mingw 只有 WSAPoll。该 inline 本插件不会调用（不会产生链接引用），但
+    # GCC 14+ 默认把“隐式声明 poll”当硬错误，导致仅含 VLC 头就编不过。降级为警告即可。
+    set(PLUGIN_WIN_C_FLAGS -Wno-error=implicit-function-declaration)
 endif()
 
 add_library(usm_plugin MODULE
@@ -38,7 +44,7 @@ set_target_properties(usm_plugin PROPERTIES
 )
 target_include_directories(usm_plugin PRIVATE ${VLC_PLUGIN_INCLUDE_DIRS} src)
 target_include_directories(usm_plugin PRIVATE ${VPX_INCLUDE_DIRS})
-target_compile_options(usm_plugin PRIVATE ${VLC_PLUGIN_CFLAGS_OTHER} -Wall -Wextra)
+target_compile_options(usm_plugin PRIVATE ${VLC_PLUGIN_CFLAGS_OTHER} -Wall -Wextra ${PLUGIN_WIN_C_FLAGS})
 target_link_libraries(usm_plugin PRIVATE usm_core ${VLC_PLUGIN_LIBRARIES} ${VPX_LIBRARIES})
 target_link_directories(usm_plugin PRIVATE ${VLC_PLUGIN_LIBRARY_DIRS} ${VPX_LIBRARY_DIRS})
 target_compile_definitions(usm_plugin PRIVATE _GNU_SOURCE MODULE_STRING="usm")
