@@ -55,13 +55,16 @@ sudo pacman -U vlc-plugin-usm-0.1.0-3-x86_64.pkg.tar.zst
 
 把构建出的 `libusm_plugin.dll` 放进 VLC 的 `plugins/demux` 目录：
 
-- MSYS2 版 VLC：`C:\msys64\mingw64\lib\vlc\plugins\demux\`
 - 官网版 VLC：`C:\Program Files\VideoLAN\VLC\plugins\demux\`
+- MSYS2 版 VLC：`C:\msys64\mingw64\lib\vlc\plugins\demux\`
 
-> 注意：本插件依赖 libvpx，MSYS2 构建出的 DLL 会动态链接 `libvpx-1.dll` 以及
-> mingw 运行时（`libgcc_s_seh-1.dll`、`libwinpthread-1.dll`）。MSYS2 版 VLC 因为
-> 这些 DLL 在 `mingw64\bin`（已在 PATH 上）能正常加载；官网版 VLC 不自带这些 DLL，
-> 直接拷过去会因找不到依赖而静默加载失败。让官网版可用的方案仍在完善中。
+> Windows 构建默认会把 libvpx 以及 mingw 运行时（libgcc / libwinpthread）静态链接进
+> DLL（CMake 选项 `USM_STATIC_VPX`，Windows 下默认 ON）。这样最终 DLL 只依赖
+> `libvlccore.dll`（VLC 自带）和系统库，**官网版 VLC 和 MSYS2 版 VLC 都能直接加载**，
+> 不需要额外拷 `libvpx-1.dll`。已在官网版 VLC 3.0.23 上实测可正常解复用并播放。
+>
+> 如果想动态链接 libvpx（DLL 更小，但需自行保证 `libvpx-1.dll` 在 VLC 能找到的路径
+> 上），配置时加 `-DUSM_STATIC_VPX=OFF`。
 
 安装后若不识别，删除缓存 `plugins.dat` 并重建：
 
