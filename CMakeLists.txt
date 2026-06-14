@@ -45,8 +45,42 @@ set_target_properties(usm_plugin PROPERTIES
 target_include_directories(usm_plugin PRIVATE ${VLC_PLUGIN_INCLUDE_DIRS} src)
 target_include_directories(usm_plugin PRIVATE ${VPX_INCLUDE_DIRS})
 target_compile_options(usm_plugin PRIVATE ${VLC_PLUGIN_CFLAGS_OTHER} -Wall -Wextra ${PLUGIN_WIN_C_FLAGS})
-target_link_libraries(usm_plugin PRIVATE usm_core ${VLC_PLUGIN_LIBRARIES} ${VPX_LIBRARIES})
+
+# Windows：静态链接 libvpx，避免依赖 libvpx-1.dll。官网版 VLC 不自带 libvpx-1.dll，
+# 动态链接会让 LoadLibrary 因缺依赖而静默失败、插件不被加载。静态进 DLL 后插件只剩
+# libvlccore.dll 和系统库依赖，官网版即可加载。
+if(WIN32)
+    set(_usm_static_vpx_default ON)
+else()
+    set(_usm_static_vpx_default OFF)
+endif()
+option(USM_STATIC_VPX "Statically link libvpx into the plugin (default ON on Windows)"
+       ${_usm_static_vpx_default})
+
+if(USM_STATIC_VPX)
+    # 在库搜索后缀里临时只留 .a，强制找到静态 libvpx.a 而非 libvpx.dll.a 导入库
+    set(_usm_saved_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+    find_library(VPX_STATIC_LIBRARY NAMES vpx
+                 HINTS ${VPX_STATIC_LIBRARY_DIRS} ${VPX_LIBRARY_DIRS})
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ${_usm_saved_suffixes})
+    if(NOT VPX_STATIC_LIBRARY)
+        message(FATAL_ERROR "USM_STATIC_VPX 为 ON 但未找到静态 libvpx.a")
+    endif()
+    set(USM_VPX_LINK ${VPX_STATIC_LIBRARY})
+else()
+    set(USM_VPX_LINK ${VPX_LIBRARIES})
+endif()
+
+target_link_libraries(usm_plugin PRIVATE usm_core ${VLC_PLUGIN_LIBRARIES} ${USM_VPX_LINK})
 target_link_directories(usm_plugin PRIVATE ${VLC_PLUGIN_LIBRARY_DIRS} ${VPX_LIBRARY_DIRS})
+if(WIN32)
+    # 静态 libvpx 会引入 libgcc / libwinpthread 依赖。只把这两者静态链进来
+    # (libvlccore 仍动态链接，它没有静态库)，让最终 DLL 不依赖任何 mingw 运行时
+    # DLL，官网版 VLC 才能直接加载。-Bstatic/-Bdynamic 必须排在 libvpx.a 之后。
+    target_link_options(usm_plugin PRIVATE -static-libgcc)
+    target_link_libraries(usm_plugin PRIVATE -Wl,-Bstatic winpthread -Wl,-Bdynamic)
+endif()
 target_compile_definitions(usm_plugin PRIVATE _GNU_SOURCE MODULE_STRING="usm")
 
 execute_process(
