@@ -11,72 +11,58 @@ VP9 解码器播放。
 - 从默认 key 文件读取密钥，适合在文件管理器里双击打开。
 - 基于时间轴拖动进度。
 
-## 安装 Arch 包
+## 安装
 
-仓库根目录已经可以生成 Arch 包：
+构建完成后将libusm_plugin.dll放入以下路径：
 
-```sh
-cd packaging/arch
-PKGDEST=../.. makepkg -f
-cd ../..
-sudo pacman -U vlc-plugin-usm-0.1.0-3-x86_64.pkg.tar.zst
+```
+# VLC Windows版默认安装路径：
+C:\Program Files\VideoLAN\VLC\plugins\demux（经测试暂不可用）
+
+# MSYS2版VLC默认安装路径：
+C:\msys64\mingw64\lib\vlc\plugins\demux
 ```
 
-安装后，VLC 的插件缓存会由 pacman hook 自动更新。
+安装后若不识别请手动删除 `plugins.dat` 并使用
+```powershell
+& "C:\Program Files\VideoLAN\VLC\vlc-cache-gen.exe" ./plugins
+```
+重建缓存。~~（貌似没用）~~
 
 ## 配置密钥
 
-推荐把 key 写到默认配置文件里，这样双击文件打开时也能自动解密：
+~~推荐把 key 写到默认配置文件里，这样双击文件打开时也能自动解密：~~
 
 ```sh
 mkdir -p ~/.config/vlc
 printf '0x7F4551499DF55E68\n' > ~/.config/vlc/usm-keys.txt
 ```
 
-默认读取顺序：
+~~默认读取顺序：~~
 
-1. `$XDG_CONFIG_HOME/vlc/usm-keys.txt`
-2. `~/.config/vlc/usm-keys.txt`
+~~1. `$XDG_CONFIG_HOME/vlc/usm-keys.txt`~~
+~~2. `~/.config/vlc/usm-keys.txt`~~
 
-key 文件支持十进制或 `0x` 前缀的十六进制；多个 key 可以用逗号、分号、
-空白或换行分隔。`#` 后面的内容会当作注释。
+~~key 文件支持十进制或 `0x` 前缀的十六进制；多个 key 可以用逗号、分号、
+空白或换行分隔。`#` 后面的内容会当作注释。~~
+（Windows下未经测试）
+
 
 也可以启动时临时传 key：
 
-```sh
-vlc --usm-keys 0x7F4551499DF55E68 /path/to/movie.dat
+```powershell
+& "\path\to\vlc\vlc.exe" --usm-keys 0x7F4551499DF55E68 \path\to\movie.dat
 ```
 
 或者指定一个自定义 key 文件：
 
-```sh
-vlc --usm-key-file /path/to/usm-keys.txt /path/to/movie.dat
+```powershell
+& "\path\to\vlc\vlc.exe" --usm-key-file \path\to\usm-keys.txt \path\to\movie.dat
 ```
 
-## 构建和测试
-
-```sh
-cmake -S . -B build
-cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
-## 本地调试插件
-
-可以不安装到系统，先用本地插件目录测试：
-
-```sh
-mkdir -p build/vlc-plugins/demux
-cp build/libusm_plugin.so build/vlc-plugins/demux/
-/usr/lib/vlc/vlc-cache-gen build/vlc-plugins
-
-VLC_PLUGIN_PATH="$PWD/build/vlc-plugins" vlc --no-plugins-cache \
-    --usm-keys 0x7F4551499DF55E68 \
-    /path/to/movie.dat
-```
-
-如果本地插件目录和系统已安装插件同时存在，VLC 可能仍然选中系统插件。做最终
-验证时建议安装新包后再测试。
+## 构建
+~~我不知道，我用vscode cmake插件构建的~~
+构建前请先修改 `CMakeList' 中的 'set(ENV{PKG_CONFIG_PATH} "")` 为你自己的 `pkgconfig` 路径
 
 ## 已知限制
 

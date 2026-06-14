@@ -4,6 +4,7 @@ project(vlc_plugin_usm C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
+set(ENV{PKG_CONFIG_PATH} "M:/msys64/mingw64/lib/pkgconfig")
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(VLC_PLUGIN REQUIRED vlc-plugin)
@@ -20,11 +21,16 @@ set_target_properties(usm_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(usm_core PUBLIC src)
 target_compile_options(usm_core PRIVATE -Wall -Wextra -Wpedantic)
 
+if(WIN32)
+    list(APPEND PLUGIN_SOURCES src/dll_entry.c)
+endif()
+
 add_library(usm_plugin MODULE
     src/usm_plugin.c
     src/usm_vlc_seek.c
     src/usm_vlc_stream.c
     src/usm_vlc_video.c
+    ${PLUGIN_SOURCES}
 )
 set_target_properties(usm_plugin PROPERTIES
     PREFIX "lib"
@@ -56,3 +62,4 @@ if(BUILD_TESTING)
     target_compile_options(usm_core_tests PRIVATE -Wall -Wextra -Wpedantic)
     add_test(NAME usm_core_tests COMMAND usm_core_tests)
 endif()
+
