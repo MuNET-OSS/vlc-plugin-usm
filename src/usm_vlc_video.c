@@ -5,6 +5,7 @@
 #include <vpx/vpx_decoder.h>
 
 #include <inttypes.h>
+#include <stdlib.h>
 #include <string.h>
 
 static bool payload_needs_decrypt(size_t payload_size)
@@ -52,19 +53,26 @@ static bool decrypted_frame_decodes(demux_t *demux, size_t key_index,
                                     block_t *payload,
                                     const usm_decryption_keys_t *keys)
 {
-    uint8_t trial[payload->i_buffer];
+    // 用堆而非栈上 VLA：payload 大小来自文件，超大帧会爆栈
+    uint8_t *trial = malloc(payload->i_buffer);
+    if (trial == NULL) {
+        return false;
+    }
     memcpy(trial, payload->p_buffer, payload->i_buffer);
     usm_decrypt_video(trial, payload->i_buffer, keys);
 
     const uint8_t *frame_data = NULL;
     size_t frame_size = 0;
     uint64_t timestamp = 0;
-    if (!usm_ivf_parse_payload_frame(trial, payload->i_buffer, &frame_data,
-                                     &frame_size, &timestamp)) {
-        return false;
+    bool ok = false;
+    if (usm_ivf_parse_payload_frame(trial, payload->i_buffer, &frame_data,
+                                    &frame_size, &timestamp)) {
+        demux_sys_t *sys = demux->p_sys;
+        ok = probe_decode_frame(&sys->key_probes[key_index], frame_data,
+                                frame_size);
     }
-    demux_sys_t *sys = demux->p_sys;
-    return probe_decode_frame(&sys->key_probes[key_index], frame_data, frame_size);
+    free(trial);
+    return ok;
 }
 
 static bool select_matching_key(demux_t *demux, block_t *payload)

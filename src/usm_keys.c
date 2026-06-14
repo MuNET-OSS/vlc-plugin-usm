@@ -90,6 +90,13 @@ char *usm_default_key_file_path_from_env(const char *xdg_config_home,
 
 char *usm_default_key_file_path(void)
 {
+#ifdef _WIN32
+    // 官网版 VLC 把用户配置放在 %APPDATA%\vlc\，优先使用
+    const char *appdata = getenv("APPDATA");
+    if (appdata != NULL && appdata[0] != '\0') {
+        return join_key_file_path(appdata, "\\vlc\\usm-keys.txt");
+    }
+#endif
     return usm_default_key_file_path_from_env(getenv("XDG_CONFIG_HOME"), getenv("HOME"));
 }
 
